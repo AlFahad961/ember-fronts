@@ -4242,11 +4242,12 @@ func build_ui() -> void:
 	side_box.grow_vertical = Control.GROW_DIRECTION_BOTH
 	side_box.position = Vector2(-6, 0)
 	root_c.add_child(side_box)
-	var sdefs := [["hq", "HQ\nShop"], ["view", "Combat\nview"], ["ind", "Industry"], ["art", "Artil-\nlery"], ["smoke", "Smoke"], ["med", "Hospital"]]
+	var sdefs := [["hq", "HQ Shop"], ["view", "Combat"], ["ind", "Industry"], ["art", "Artillery"], ["smoke", "Smoke"], ["med", "Hospital"]]
 	for sd in sdefs:
-		var b := mk_button(sd[1], _on_side.bind(sd[0]), "", 78)
-		b.custom_minimum_size = Vector2(96, 78)
-		b.add_theme_font_size_override("font_size", 17)
+		var b := mk_button(sd[1], _on_side.bind(sd[0]), "", 86)
+		b.custom_minimum_size = Vector2(98, 86)
+		b.add_theme_font_size_override("font_size", 15)
+		set_icon(b, sd[0], true, 34)
 		side_box.add_child(b)
 		side_btns[sd[0]] = b
 
@@ -4289,9 +4290,14 @@ func build_ui() -> void:
 	tabbar = HBoxContainer.new()
 	tabbar.add_theme_constant_override("separation", 2)
 	for td in TABS:
-		var tb := mk_button(td[1], _on_tab.bind(td[0]), "", 70)
+		var tb := mk_button(td[1], _on_tab.bind(td[0]), "", 84)
 		tb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		tb.add_theme_font_size_override("font_size", 16)
+		tb.add_theme_font_size_override("font_size", 15)
+		set_icon(tb, td[0], true, 32)
+		tb.add_theme_constant_override("h_separation", 0)
+		tb.add_theme_stylebox_override("normal", sbox(Color.html("3a4a2a"), Color.html("8b6f33"), 2))
+		tb.get_theme_stylebox("normal").content_margin_left = 2
+		tb.get_theme_stylebox("normal").content_margin_right = 2
 		tb.clip_text = true
 		tabbar.add_child(tb)
 		tab_btns[td[0]] = tb
@@ -4460,7 +4466,7 @@ func sheet_section(s: String) -> void:
 	sheet_box.add_child(mk_label(s.to_upper(), 18, COL.dim))
 
 
-func item_card(title: String, price_text: String, desc: String, buttons: Array) -> void:
+func item_card(title: String, price_text: String, desc: String, buttons: Array, icon_key: String = "") -> void:
 	var v := VBoxContainer.new()
 	var hr := HBoxContainer.new()
 	var tl := mk_label(title, 23, COL.text)
@@ -4480,7 +4486,15 @@ func item_card(title: String, price_text: String, desc: String, buttons: Array) 
 				b.disabled = true
 			br.add_child(b)
 		v.add_child(br)
-	sheet_box.add_child(mk_panel(v))
+	if icon_key != "":
+		var row := HBoxContainer.new()
+		var ir_ := mk_icon_rect(icon_key, 72.0)
+		row.add_child(ir_)
+		v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(v)
+		sheet_box.add_child(mk_panel(row))
+	else:
+		sheet_box.add_child(mk_panel(v))
 
 
 func buy_card(k: String) -> void:
@@ -4489,13 +4503,13 @@ func buy_card(k: String) -> void:
 	var desc: String = BUY_DESC.get(k, "")
 	if D.ACTYPES.has(k):
 		desc = String(D.ACTYPES[k].desc)
-	item_card(d.name, money(p), desc, [["BUY", _on_buy.bind(k), "g", can_pay(p)]])
+	item_card(d.name, money(p), desc, [["BUY", _on_buy.bind(k), "g", can_pay(p)]], k)
 
 
 func build_card(k: String) -> void:
 	var p := price(k)
 	var d: Dictionary = D.BUILD[k]
-	item_card(d.name, money(p), String(d.desc) + "  (%d s)" % int(d.t), [["BUILD", _on_place.bind(k), "g", can_pay(p)]])
+	item_card(d.name, money(p), String(d.desc) + "  (%d s)" % int(d.t), [["BUILD", _on_place.bind(k), "g", can_pay(p)]], k)
 
 
 func _on_buy(k: String) -> void:
@@ -4561,9 +4575,10 @@ func sheet_air() -> void:
 		["hq", "Buy aircraft", "g"],
 	]
 	for d in defs:
-		var b := mk_button(d[1], _on_air.bind(d[0]), d[2], 84)
+		var b := mk_button(d[1], _on_air.bind(d[0]), d[2], 100)
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		b.add_theme_font_size_override("font_size", 17)
+		b.add_theme_font_size_override("font_size", 16)
+		set_icon(b, "buy" if d[0] == "hq" else ("pause" if d[0] == "pause" else d[0]), true, 40)
 		g.add_child(b)
 	sheet_box.add_child(g)
 	sheet_section("Your aircraft")
@@ -4571,6 +4586,7 @@ func sheet_air() -> void:
 		sheet_box.add_child(mk_wrap("No aircraft. Buy one at HQ.", 20))
 	for a in ac:
 		var hr := HBoxContainer.new()
+		hr.add_child(mk_icon_rect(a.type, 44.0))
 		var tl := mk_label("", 20, COL.text)
 		tl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		hr.add_child(tl)
@@ -4654,7 +4670,7 @@ func sheet_ad() -> void:
 	sheet_box.add_child(mk_wrap("Shield SAMs stop drones and aircraft. Long range SAMs also shoot ballistic and cruise missiles. Use Combat view to see ranges.", 18))
 	build_card("sam")
 	build_card("lsam")
-	item_card("Combat view", "", "Show or hide the air defense range circles on the map.", [["TOGGLE", _on_side.bind("view"), "o"]])
+	item_card("Combat view", "", "Show or hide the air defense range circles on the map.", [["TOGGLE", _on_side.bind("view"), "o"]], "view")
 
 
 func sheet_army() -> void:
@@ -4681,9 +4697,9 @@ func sheet_army() -> void:
 		v.add_child(btn)
 		sheet_box.add_child(mk_panel(v))
 	sheet_section("Support (tap to use on the map)")
-	item_card("Artillery", "%d shells" % shell_n, "Barrage on a point near the front.", [["USE", _on_side.bind("art"), "o"], ["+10 shells", _on_buy.bind("shell"), "", can_pay(price("shell"))]])
-	item_card("Smoke screen", "%d" % smoke_n, "Protects our group from fire for 45 seconds.", [["USE", _on_side.bind("smoke"), "o"], ["+2 smoke", _on_buy.bind("smoke"), "", can_pay(price("smoke"))]])
-	item_card("Field hospital", "%d" % med_n, "Heals an army group.", [["USE", _on_side.bind("med"), "o"], ["+2 hospitals", _on_buy.bind("med"), "", can_pay(price("med"))]])
+	item_card("Artillery", "%d shells" % shell_n, "Barrage on a point near the front.", [["USE", _on_side.bind("art"), "o"], ["+10 shells", _on_buy.bind("shell"), "", can_pay(price("shell"))]], "shell")
+	item_card("Smoke screen", "%d" % smoke_n, "Protects our group from fire for 45 seconds.", [["USE", _on_side.bind("smoke"), "o"], ["+2 smoke", _on_buy.bind("smoke"), "", can_pay(price("smoke"))]], "smoke")
+	item_card("Field hospital", "%d" % med_n, "Heals an army group.", [["USE", _on_side.bind("med"), "o"], ["+2 hospitals", _on_buy.bind("med"), "", can_pay(price("med"))]], "med")
 	buy_card("brig")
 
 
@@ -4879,7 +4895,8 @@ func build_chips() -> void:
 		var aid: int = a.id
 		var letter: String = {"atk": "A", "ftr": "F", "bmb": "B"}[a.type]
 		var b := mk_button("%s%d" % [letter, a.n], _on_pick_ac.bind(aid), "", 54)
-		b.custom_minimum_size = Vector2(76, 54)
+		b.custom_minimum_size = Vector2(104, 54)
+		set_icon(b, a.type, false, 30)
 		if sel != null and is_same(sel, a):
 			b.modulate = Color(1.0, 0.8, 0.4)
 		elif a.st == "parked" or a.st == "rearm":
@@ -4888,14 +4905,16 @@ func build_chips() -> void:
 	for tr in trucks:
 		var tt: Dictionary = tr
 		var b2 := mk_button("T%d" % tr.n, func(): select(tt), "", 54)
-		b2.custom_minimum_size = Vector2(70, 54)
+		b2.custom_minimum_size = Vector2(104, 54)
+		set_icon(b2, "truck", false, 30)
 		if sel != null and is_same(sel, tr):
 			b2.modulate = Color(1.0, 0.8, 0.4)
 		chips_box.add_child(b2)
 	for fl in fleets:
 		var ff: Dictionary = fl
 		var b3 := mk_button("S%d" % fl.n, func(): select(ff), "", 54)
-		b3.custom_minimum_size = Vector2(70, 54)
+		b3.custom_minimum_size = Vector2(104, 54)
+		set_icon(b3, "fleet", false, 30)
 		if sel != null and is_same(sel, fl):
 			b3.modulate = Color(1.0, 0.8, 0.4)
 		chips_box.add_child(b3)
@@ -5122,3 +5141,319 @@ func standings() -> Control:
 		g.add_child(mk_label(str(r.t), 22, col))
 		i += 1
 	return g
+
+
+# ====================================================================== pixel icons for menus
+var icon_cache := {}
+
+
+func ir(img: Image, x: int, y: int, w: int, h: int, c: Color) -> void:
+	for yy in range(y, y + h):
+		for xx in range(x, x + w):
+			if xx >= 0 and yy >= 0 and xx < 24 and yy < 24:
+				img.set_pixel(xx, yy, c)
+
+
+func ic_line(img: Image, x0: int, y0: int, x1: int, y1: int, c: Color) -> void:
+	var n := maxi(absi(x1 - x0), absi(y1 - y0))
+	for i in range(n + 1):
+		var u := float(i) / maxf(1.0, n)
+		ir(img, int(round(lerpf(x0, x1, u))), int(round(lerpf(y0, y1, u))), 1, 1, c)
+
+
+func ic_disc(img: Image, cx: int, cy: int, r: int, c: Color) -> void:
+	for yy in range(cy - r, cy + r + 1):
+		for xx in range(cx - r, cx + r + 1):
+			if (xx - cx) * (xx - cx) + (yy - cy) * (yy - cy) <= r * r + 1:
+				ir(img, xx, yy, 1, 1, c)
+
+
+func ic_plane(img: Image, shape: Array, pal: Dictionary) -> void:
+	for y in range(shape.size()):
+		var row: String = shape[y]
+		for x in range(row.length()):
+			var ch := row[x]
+			if ch != ".":
+				ir(img, 1 + x * 2, 1 + y * 2, 2, 2, Color.html(pal[ch]))
+
+
+func icon(key: String) -> ImageTexture:
+	if icon_cache.has(key):
+		return icon_cache[key]
+	var img := Image.create(24, 24, false, Image.FORMAT_RGBA8)
+	var gold := Color.html("f0c660")
+	var steel := Color.html("aab5c2")
+	var dark := Color.html("2c3440")
+	var red := Color.html("e5483f")
+	var blue := Color.html("4d93ff")
+	var green := Color.html("86d963")
+	var white := Color.html("efe6c8")
+	var brown := Color.html("8d6a3c")
+	var orange := Color.html("ff8a2a")
+	match key:
+		"atk":
+			ic_plane(img, D.PLANE_ATK, D.PAL_PLAYER)
+		"ftr":
+			ic_plane(img, D.PLANE_FTR, D.PAL_PLAYER)
+		"bmb":
+			ic_plane(img, D.PLANE_BMB, D.PAL_PLAYER)
+		"truck":
+			ir(img, 2, 12, 15, 6, Color.html("5d6b4a"))
+			ir(img, 17, 13, 5, 5, Color.html("7d8f66"))
+			ir(img, 19, 14, 2, 2, blue)
+			ir(img, 3, 9, 12, 3, white)
+			ir(img, 1, 9, 2, 3, red)
+			ir(img, 4, 18, 4, 3, Color.BLACK)
+			ir(img, 11, 18, 4, 3, Color.BLACK)
+			ir(img, 18, 18, 4, 3, Color.BLACK)
+		"msl":
+			ic_line(img, 5, 19, 17, 7, white)
+			ic_line(img, 6, 19, 18, 7, white)
+			ic_line(img, 5, 18, 17, 6, steel)
+			ic_disc(img, 19, 5, 2, red)
+			ic_disc(img, 3, 21, 2, orange)
+			ic_disc(img, 2, 22, 1, gold)
+		"uav":
+			ir(img, 10, 4, 4, 15, Color.html("3a3f44"))
+			ir(img, 2, 12, 20, 3, Color.html("4a5057"))
+			ir(img, 6, 17, 12, 2, Color.html("4a5057"))
+			ir(img, 11, 2, 2, 3, red)
+			ir(img, 11, 19, 2, 3, orange)
+		"fleet":
+			ir(img, 2, 14, 20, 5, Color.html("6c7a8a"))
+			ir(img, 1, 14, 2, 3, Color.html("6c7a8a"))
+			ir(img, 8, 9, 8, 5, Color.html("a9b6c4"))
+			ir(img, 10, 5, 2, 4, steel)
+			ir(img, 18, 11, 3, 3, dark)
+			ir(img, 0, 20, 24, 3, blue)
+			ir(img, 3, 21, 4, 1, white)
+		"brig":
+			ic_disc(img, 12, 6, 3, Color.html("c9a37a"))
+			ir(img, 8, 9, 8, 8, Color.html("5d6b4a"))
+			ir(img, 8, 17, 3, 5, dark)
+			ir(img, 13, 17, 3, 5, dark)
+			ir(img, 18, 8, 2, 12, brown)
+			ir(img, 17, 6, 4, 3, steel)
+			ir(img, 6, 3, 12, 2, Color.html("3a4a2a"))
+		"smoke":
+			ic_disc(img, 8, 15, 5, Color.html("c9ced4"))
+			ic_disc(img, 15, 13, 6, Color.html("dde1e6"))
+			ic_disc(img, 12, 8, 4, Color.html("eef0f2"))
+			ir(img, 3, 20, 18, 2, steel)
+		"shell":
+			ir(img, 9, 8, 6, 12, gold)
+			ir(img, 10, 4, 4, 4, Color.html("c75d43"))
+			ir(img, 11, 2, 2, 2, Color.html("c75d43"))
+			ir(img, 8, 19, 8, 3, brown)
+			ir(img, 9, 12, 6, 1, brown)
+		"med":
+			ir(img, 3, 3, 18, 18, white)
+			ir(img, 10, 6, 4, 12, red)
+			ir(img, 6, 10, 12, 4, red)
+		"airfield":
+			ir(img, 1, 11, 22, 6, Color.html("4f545a"))
+			for i in range(3):
+				ir(img, 3 + i * 7, 13, 4, 1, white)
+			ir(img, 2, 4, 6, 4, Color.html("59708f"))
+			ir(img, 10, 4, 6, 4, Color.html("59708f"))
+			ir(img, 19, 3, 2, 8, dark)
+			ir(img, 17, 2, 6, 3, steel)
+		"droneport":
+			ir(img, 3, 12, 18, 8, Color.html("59708f"))
+			ir(img, 9, 8, 6, 4, steel)
+			ir(img, 11, 3, 2, 5, steel)
+			ir(img, 8, 15, 8, 5, dark)
+		"uavfac":
+			ir(img, 2, 10, 20, 11, Color.html("6a7a8d"))
+			ir(img, 4, 5, 5, 5, dark)
+			ir(img, 14, 14, 6, 3, steel)
+			ir(img, 5, 14, 5, 7, dark)
+		"rocketfac":
+			ir(img, 2, 14, 20, 8, Color.html("6a7a8d"))
+			ir(img, 10, 3, 4, 12, white)
+			ir(img, 11, 1, 2, 2, red)
+			ir(img, 9, 12, 6, 3, red)
+		"plant":
+			ir(img, 2, 15, 20, 7, Color.html("6e7f99"))
+			ic_line(img, 4, 14, 6, 4, Color.html("c8c4bc"))
+			ic_line(img, 11, 14, 9, 4, Color.html("c8c4bc"))
+			ir(img, 5, 5, 6, 10, Color.html("c8c4bc"))
+			ir(img, 12, 5, 6, 10, Color.html("c8c4bc"))
+			ir(img, 6, 1, 3, 3, Color.html("e8e8ea"))
+		"solar":
+			for i in range(3):
+				for j in range(2):
+					ir(img, 2 + i * 7, 5 + j * 8, 6, 6, Color.html("1f3a6b"))
+					ir(img, 2 + i * 7, 5 + j * 8, 6, 1, Color.html("6a8fd0"))
+			ic_disc(img, 20, 3, 2, gold)
+		"derrick":
+			ic_line(img, 6, 21, 12, 5, steel)
+			ic_line(img, 18, 21, 12, 5, steel)
+			ir(img, 10, 2, 4, 3, steel)
+			ir(img, 3, 20, 18, 3, dark)
+			ir(img, 11, 12, 2, 8, Color.html("c75d43"))
+			ic_disc(img, 12, 20, 2, Color.BLACK)
+		"mine":
+			ir(img, 2, 12, 20, 10, Color.html("7a746d"))
+			ir(img, 6, 15, 12, 7, dark)
+			ir(img, 3, 8, 18, 4, Color.html("5a544e"))
+			ic_line(img, 8, 2, 16, 8, Color.html("c9ced4"))
+			ic_line(img, 16, 2, 8, 8, Color.html("c9ced4"))
+		"warehouse":
+			ir(img, 2, 8, 20, 13, Color.html("8d8470"))
+			ir(img, 2, 6, 20, 3, Color.html("6d6454"))
+			ir(img, 7, 12, 10, 9, Color.html("5b4a30"))
+			ir(img, 8, 14, 8, 1, brown)
+			ir(img, 8, 17, 8, 1, brown)
+		"sam":
+			ir(img, 3, 17, 18, 5, Color.html("5f6f8a"))
+			ic_line(img, 6, 17, 4, 5, white)
+			ic_line(img, 12, 17, 12, 3, white)
+			ic_line(img, 18, 17, 20, 5, white)
+			ic_disc(img, 4, 5, 2, red)
+			ic_disc(img, 12, 3, 2, red)
+			ic_disc(img, 20, 5, 2, red)
+		"lsam":
+			ir(img, 2, 18, 20, 4, Color.html("5f6f8a"))
+			for i in range(4):
+				ic_line(img, 4 + i * 5, 18, 8 + i * 4, 3, white)
+				ir(img, 8 + i * 4 - 1, 2, 3, 3, red)
+		"port":
+			ir(img, 0, 18, 24, 5, blue)
+			ir(img, 2, 12, 14, 6, Color.html("7b6a52"))
+			ir(img, 16, 14, 6, 4, brown)
+			ir(img, 5, 3, 2, 9, dark)
+			ir(img, 5, 3, 9, 2, dark)
+			ir(img, 12, 5, 2, 5, steel)
+		# ---- tabs and actions
+		"map":
+			ir(img, 2, 4, 20, 16, Color.html("5a8f4a"))
+			ir(img, 14, 4, 8, 16, Color.html("a8503e"))
+			ic_line(img, 13, 4, 13, 20, Color.BLACK)
+			ir(img, 4, 8, 6, 4, blue)
+		"cities":
+			ir(img, 2, 12, 6, 10, Color.html("7a9bd0"))
+			ir(img, 9, 5, 7, 17, Color.html("8a8f96"))
+			ir(img, 17, 10, 6, 12, Color.html("7a9bd0"))
+			for yy in range(7, 20, 4):
+				ir(img, 11, yy, 2, 2, gold)
+				ir(img, 3, yy + 4 if yy < 15 else 20, 2, 2, gold)
+		"air":
+			ic_plane(img, D.PLANE_ATK, D.PAL_PLAYER)
+		"ad":
+			ir(img, 6, 3, 12, 11, Color.html("3b6fd0"))
+			ir(img, 8, 14, 8, 3, Color.html("3b6fd0"))
+			ir(img, 10, 17, 4, 3, Color.html("3b6fd0"))
+			ir(img, 8, 5, 8, 8, Color.html("6aa0f0"))
+			ir(img, 11, 6, 2, 6, white)
+		"army":
+			ic_disc(img, 8, 7, 3, Color.html("c9a37a"))
+			ir(img, 5, 10, 6, 9, Color.html("5d6b4a"))
+			ic_disc(img, 17, 8, 3, Color.html("c9a37a"))
+			ir(img, 14, 11, 6, 9, Color.html("5d6b4a"))
+			ir(img, 4, 4, 8, 2, Color.html("3a4a2a"))
+			ir(img, 13, 5, 8, 2, Color.html("3a4a2a"))
+		"pol":
+			ic_disc(img, 12, 12, 9, blue)
+			ic_disc(img, 12, 12, 7, Color.html("2f6b3f"))
+			ir(img, 4, 11, 16, 2, blue)
+			ir(img, 11, 3, 2, 18, blue)
+			ir(img, 6, 6, 4, 3, Color.html("5aa04a"))
+			ir(img, 14, 14, 4, 4, Color.html("5aa04a"))
+		"ind":
+			ir(img, 2, 12, 20, 10, Color.html("6a7a8d"))
+			ir(img, 4, 4, 4, 9, Color.html("8a8f96"))
+			ir(img, 10, 7, 4, 6, Color.html("8a8f96"))
+			ir(img, 16, 9, 4, 4, Color.html("8a8f96"))
+			ic_disc(img, 5, 3, 2, Color.html("d6d8da"))
+			ir(img, 5, 15, 3, 3, gold)
+			ir(img, 11, 15, 3, 3, gold)
+			ir(img, 17, 15, 3, 3, gold)
+		"hq":
+			ir(img, 3, 9, 18, 12, Color.html("c75d43"))
+			ir(img, 1, 6, 22, 4, Color.html("8a3a2a"))
+			ir(img, 5, 12, 4, 5, white)
+			ir(img, 15, 12, 4, 5, white)
+			ir(img, 10, 14, 4, 7, brown)
+			ic_disc(img, 12, 3, 2, gold)
+		"view":
+			ic_disc(img, 12, 12, 9, white)
+			ic_disc(img, 12, 12, 6, blue)
+			ic_disc(img, 12, 12, 3, Color.BLACK)
+			ic_disc(img, 10, 10, 1, white)
+		"art":
+			ir(img, 2, 13, 14, 5, Color.html("4a5057"))
+			ic_line(img, 6, 14, 20, 5, Color.html("6a7078"))
+			ic_line(img, 6, 15, 20, 6, Color.html("6a7078"))
+			ic_disc(img, 6, 20, 3, Color.BLACK)
+			ic_disc(img, 21, 3, 2, orange)
+		"pause":
+			ir(img, 6, 4, 4, 16, white)
+			ir(img, 14, 4, 4, 16, white)
+		"route":
+			ic_line(img, 3, 20, 9, 8, orange)
+			ic_line(img, 9, 8, 15, 16, orange)
+			ic_line(img, 15, 16, 21, 4, orange)
+			ic_disc(img, 3, 20, 2, green)
+			ic_disc(img, 9, 8, 2, white)
+			ic_disc(img, 15, 16, 2, white)
+			ic_disc(img, 21, 4, 2, red)
+		"recon":
+			ic_disc(img, 12, 12, 9, green)
+			ic_disc(img, 12, 12, 7, Color.html("0d130f"))
+			ic_disc(img, 12, 12, 4, Color.html("2f6b2a"))
+			ic_line(img, 12, 12, 19, 6, green)
+			ic_disc(img, 15, 15, 1, red)
+		"strike":
+			ic_disc(img, 12, 12, 9, red)
+			ic_disc(img, 12, 12, 7, Color.html("1a0a0a"))
+			ic_disc(img, 12, 12, 4, red)
+			ic_disc(img, 12, 12, 1, white)
+			ir(img, 11, 0, 2, 5, red)
+			ir(img, 11, 19, 2, 5, red)
+			ir(img, 0, 11, 5, 2, red)
+			ir(img, 19, 11, 5, 2, red)
+		"speed":
+			ic_line(img, 3, 5, 10, 12, white)
+			ic_line(img, 3, 19, 10, 12, white)
+			ic_line(img, 3, 4, 10, 11, white)
+			ic_line(img, 3, 20, 10, 13, white)
+			ic_line(img, 12, 5, 19, 12, gold)
+			ic_line(img, 12, 19, 19, 12, gold)
+			ic_line(img, 12, 4, 19, 11, gold)
+			ic_line(img, 12, 20, 19, 13, gold)
+		"buy":
+			ic_plane(img, D.PLANE_FTR, D.PAL_PLAYER)
+			ir(img, 16, 0, 8, 8, gold)
+			ir(img, 19, 1, 2, 6, Color.BLACK)
+		_:
+			ic_disc(img, 12, 12, 8, gold)
+	var big := Image.create(48, 48, false, Image.FORMAT_RGBA8)
+	for y in range(48):
+		for x in range(48):
+			big.set_pixel(x, y, img.get_pixel(x / 2, y / 2))
+	var tex := ImageTexture.create_from_image(big)
+	icon_cache[key] = tex
+	return tex
+
+
+func set_icon(b: Button, key: String, top: bool = true, size: int = 36) -> void:
+	var tex := icon(key)
+	var im := tex.get_image()
+	im.resize(size, size, Image.INTERPOLATE_NEAREST)
+	b.icon = ImageTexture.create_from_image(im)
+	if top:
+		b.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
+		b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		b.expand_icon = false
+
+
+func mk_icon_rect(key: String, size: float = 56.0) -> TextureRect:
+	var r := TextureRect.new()
+	r.texture = icon(key)
+	r.custom_minimum_size = Vector2(size, size)
+	r.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	r.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	r.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	r.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	return r
