@@ -6,11 +6,11 @@ extends Node2D
 const D = preload("res://assets_data.gd")
 
 const TS := 6
-const GW := 192
-const GH := 256
-const W := 1152.0
-const H := 1536.0
-const NB := 32
+const GW := 288
+const GH := 384
+const W := 1728.0
+const H := 2304.0
+const NB := 48
 const BH := 48.0
 const GB_DMG := 2.5
 const RK_DMG := 0.4
@@ -203,7 +203,7 @@ func fb(n: FastNoiseLite, x: float, y: float) -> float:
 func rhash(x: int, y: int, s: int) -> float:
 	var h: int = (x * 374761393 + y * 668265263 + s * 1274126177) & 0x7fffffff
 	h = ((h ^ (h >> 13)) * 1274126177) & 0x7fffffff
-	return float((h ^ (h >> 16)) & 0xffff) / 65535.0
+	return float((h ^ (h >> 16)) & 0xffff) / 65536.0
 
 
 func coast_g(gy: float) -> float:
@@ -271,10 +271,10 @@ func gen_world() -> void:
 	placed.append({"x": ecap.x, "y": ecap.y, "r": 62.0})
 	mk_town(pcap.x, pcap.y, 58.0, "AZURIA CITY", true)
 	mk_town(ecap.x, ecap.y, 58.0, "KARMIN CITY", true)
-	for i in range(7):
+	for i in range(10):
 		var p := spot(W * 0.06, W * 0.4, H * 0.04, H * 0.84, 34.0)
 		mk_town(p.x, p.y, rng.randf_range(24.0, 38.0), D.PLAYER_TOWNS[i], false)
-	for i in range(7):
+	for i in range(10):
 		var p := spot(W * 0.6, W * 0.9, H * 0.06, H * 0.84, 34.0)
 		mk_town(p.x, p.y, rng.randf_range(24.0, 38.0), D.ENEMY_TOWNS[i], false)
 	var afs := [Vector2(W * 0.23, H * 0.27), Vector2(W * 0.2, H * 0.72), Vector2(W * 0.84, H * 0.19)]
@@ -283,8 +283,8 @@ func gen_world() -> void:
 		carve(a.x, a.y, 50.0)
 	pp_pos = [spot(W * 0.1, W * 0.36, H * 0.12, H * 0.82, 20.0), spot(W * 0.1, W * 0.36, H * 0.12, H * 0.82, 20.0),
 		spot(W * 0.08, W * 0.36, H * 0.1, H * 0.82, 16.0)]
-	ep_pos = [spot(W * 0.65, W * 0.88, H * 0.12, H * 0.82, 20.0), spot(W * 0.65, W * 0.88, H * 0.12, H * 0.82, 20.0)]
-	for i in range(3):
+	ep_pos = [spot(W * 0.65, W * 0.88, H * 0.12, H * 0.82, 20.0), spot(W * 0.65, W * 0.88, H * 0.12, H * 0.82, 20.0), spot(W * 0.65, W * 0.88, H * 0.12, H * 0.82, 20.0)]
+	for i in range(5):
 		dep_pos.append(spot(W * 0.66, W * 0.88, H * 0.08, H * 0.82, 16.0))
 	for arr in [pp_pos, ep_pos, dep_pos]:
 		for p in arr:
@@ -628,10 +628,10 @@ func new_game() -> void:
 		tw.lit = true
 		tw.burn = 0.0
 	# enemy side
-	for j in range(12):
-		var y := (j + 0.5) * H / 12.0 * 0.9 + randf_range(-25.0, 25.0)
+	for j in range(20):
+		var y := (j + 0.5) * H / 20.0 * 0.9 + randf_range(-25.0, 25.0)
 		add_target("inf", F[band_of(y)] + randf_range(28.0, 70.0), y)
-	for f in [0.14, 0.3, 0.5, 0.66, 0.8]:
+	for f in [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]:
 		var y: float = H * f
 		add_target("sam", F[band_of(y)] + randf_range(80.0, 170.0), y)
 	for p in ep_pos:
@@ -684,6 +684,7 @@ func new_game() -> void:
 	cam = Vector2(W * 0.3, H * 0.4)
 	zoom = vw / 520.0
 	clamp_cam()
+	reset_tut()
 	select(null)
 	set_tab("map")
 	say("Orders received. Good luck, commander.", "")
@@ -2895,8 +2896,14 @@ func step(dt: float) -> void:
 		calc_grid()
 	upd_econ(dt)
 	upd_build(dt)
-	upd_ground(dt)
-	upd_enemy(dt)
+	if grace > 0.0:
+		grace -= dt
+		wship_t = maxf(wship_t, 60.0)
+		if grace <= 0.0:
+			banner("PEACE IS OVER", "war", "Karmin attacks now. Defend and strike back.")
+	else:
+		upd_ground(dt)
+		upd_enemy(dt)
 	upd_ships(dt)
 	upd_fleets(dt)
 	upd_trucks(dt)
@@ -4210,7 +4217,7 @@ func build_ui() -> void:
 
 	# ---- feed, banners, toast
 	feed_box = VBoxContainer.new()
-	feed_box.position = Vector2(10, 128)
+	feed_box.position = Vector2(10, 300)
 	feed_box.custom_minimum_size = Vector2(430, 0)
 	ignore_mouse(feed_box)
 	root_c.add_child(feed_box)
@@ -4242,7 +4249,7 @@ func build_ui() -> void:
 	side_box.grow_vertical = Control.GROW_DIRECTION_BOTH
 	side_box.position = Vector2(-6, 0)
 	root_c.add_child(side_box)
-	var sdefs := [["hq", "HQ Shop"], ["view", "Combat"], ["ind", "Industry"], ["art", "Artillery"], ["smoke", "Smoke"], ["med", "Hospital"]]
+	var sdefs := [["hq", "HQ Shop"], ["view", "Combat"], ["ind", "Industry"], ["art", "Artillery"], ["smoke", "Smoke"], ["med", "Hospital"], ["help", "? Help"]]
 	for sd in sdefs:
 		var b := mk_button(sd[1], _on_side.bind(sd[0]), "", 86)
 		b.custom_minimum_size = Vector2(98, 86)
@@ -4320,6 +4327,7 @@ func build_ui() -> void:
 	ov_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	ov_box.add_theme_constant_override("separation", 14)
 	sc.add_child(ov_box)
+	build_tut()
 	blockers = [hud_pn, side_box, bottom_box]
 
 
@@ -4361,6 +4369,8 @@ func _on_side(id: String) -> void:
 				toast("No smoke canisters. Buy them at HQ.")
 			else:
 				mode = "smoke"
+		"help":
+			set_tab("help" if tab != "help" else "map")
 		"med":
 			set_tab("map")
 			if med_n <= 0:
@@ -4454,6 +4464,8 @@ func render_sheet() -> void:
 			sheet_ind()
 		"hq":
 			sheet_hq()
+		"help":
+			sheet_help()
 	sheet_sc.scroll_vertical = keep
 	update_dyn()
 
@@ -4976,7 +4988,8 @@ func update_hud() -> void:
 	l_coin.text = "$ %d" % int(coins)
 	l_oil.text = "Oil %d" % int(oil)
 	l_metal.text = "Metal %d" % int(metal)
-	l_time.text = tstr(t)
+	l_time.text = ("PEACE " + tstr(grace)) if grace > 0.0 else tstr(t)
+	l_time.add_theme_color_override("font_color", Color.html("86d963") if grace > 0.0 else COL.dim)
 	l_score.text = "Score %d / %d" % [int(score), int(D.GOAL)]
 	pb_score.value = minf(score, D.GOAL)
 	l_pow.text = "Power %.1f/%.1f" % [supply, demand]
@@ -5012,6 +5025,7 @@ func _process(delta: float) -> void:
 	if hud_tick <= 0.0:
 		hud_tick = 0.2
 		update_hud()
+		upd_tut()
 		var fs := ""
 		for f in feed:
 			if f.life > 0.0:
@@ -5387,6 +5401,12 @@ func icon(key: String) -> ImageTexture:
 			ic_line(img, 6, 15, 20, 6, Color.html("6a7078"))
 			ic_disc(img, 6, 20, 3, Color.BLACK)
 			ic_disc(img, 21, 3, 2, orange)
+		"help":
+			ic_disc(img, 12, 12, 10, blue)
+			ir(img, 9, 6, 6, 3, white)
+			ir(img, 13, 8, 3, 4, white)
+			ir(img, 11, 11, 3, 3, white)
+			ir(img, 11, 16, 3, 3, white)
 		"pause":
 			ir(img, 6, 4, 4, 16, white)
 			ir(img, 14, 4, 4, 16, white)
@@ -5457,3 +5477,102 @@ func mk_icon_rect(key: String, size: float = 56.0) -> TextureRect:
 	r.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	r.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	return r
+
+
+# ====================================================================== peace time, missions, help
+var grace := 240.0
+var bl0 := 0
+var tut_i := 0
+var tut_flag := {}
+var pn_tut: PanelContainer
+var l_tut_h: Label
+var l_tut_t: Label
+
+const MISSIONS := [
+	["Select a jet", "Tap one of the aircraft buttons at the bottom (A1, A2, A3) or tap a plane on the map.", "sel"],
+	["Bomb a target", "With an aircraft selected, tap a red enemy marker on the map (I, S, D...). The jet takes off, bombs it and flies home.", "atk"],
+	["Buy a missile truck", "Open HQ Shop (right side) and buy a Missile launcher truck. Missiles are fired from trucks, not from planes.", "truck"],
+	["Fire a ballistic missile", "Tap the truck button (T1 or T2), then tap a far enemy marker. The truck drives, fires and hides.", "bal"],
+	["Build something", "Open the Industry tab, press BUILD on a Power plant or Oil derrick, then tap a free spot on your side (blue).", "build"],
+	["Launch a drone", "Open Aviation, press Recon, then tap the enemy side. Drones show hidden enemy trucks (red M).", "uav"],
+	["Destroy 5 enemy targets", "Keep striking. Capture cities by pushing the front line with the Army tab and artillery.", "kills5"],
+	["Free play", "Reach 15000 score or take Karmin City. Open the ? Help button any time.", ""],
+]
+
+const HELP_TEXT := [
+	["GOAL", "Beat Karmin (red). Reach 15000 score, or push the front line until Karmin City falls. If the front reaches Azuria City you lose."],
+	["FIRST 4 MINUTES", "Karmin does not attack yet (PEACE timer at the top). Use this time to follow the Mission box and build up."],
+	["MOVE THE MAP", "Drag with one finger. Pinch with two fingers to zoom. Tap a unit to select it."],
+	["PLANES", "Tap a plane, then tap an enemy marker to bomb it. Tap the ground to patrol there. Tap your airfield to land. Attackers and bombers bomb, fighters shoot planes and drones. Buy more at HQ Shop."],
+	["MISSILE TRUCKS", "Buy a truck and missiles at HQ Shop. Tap the truck, then tap a far enemy marker. After firing it hides. Enemy trucks are hidden: send a Recon drone."],
+	["BUILD", "Open Industry or Aviation, press BUILD, then tap a free place on your side. Derrick gives oil, mine gives metal, plants give power."],
+	["POWER", "Cities need electricity. If power is too low, cities go dark and pay less. Build power plants or solar."],
+	["ARMY", "The Army tab has 4 groups. ATTACK pushes the front, DEFEND holds it. Use artillery, smoke and hospital buttons on the right side."],
+	["AIR DEFENSE", "Build Shield SAMs and Long range SAMs near your cities and airfields. Combat view shows their range."],
+	["SHIPS AND POLITICS", "Yellow flag ships belong to neutral countries. Sinking them makes a diplomatic case in Politics. Accept trade offers to earn coins."],
+]
+
+
+func build_tut() -> void:
+	pn_tut = PanelContainer.new()
+	pn_tut.position = Vector2(10, 128)
+	pn_tut.custom_minimum_size = Vector2(450, 0)
+	pn_tut.add_theme_stylebox_override("panel", sbox(Color(0.1, 0.07, 0.02, 0.92), Color.html("e0a040"), 2))
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 2)
+	l_tut_h = mk_label("", 19, COL.orange)
+	l_tut_t = mk_wrap("", 17, COL.text)
+	l_tut_t.custom_minimum_size = Vector2(420, 0)
+	v.add_child(l_tut_h)
+	v.add_child(l_tut_t)
+	pn_tut.add_child(v)
+	ignore_mouse(pn_tut)
+	ignore_mouse(v)
+	ignore_mouse(l_tut_h)
+	ignore_mouse(l_tut_t)
+	root_c.add_child(pn_tut)
+
+
+func reset_tut() -> void:
+	tut_i = 0
+	tut_flag = {}
+	grace = 240.0
+	bl0 = bl.size()
+
+
+func upd_tut() -> void:
+	if pn_tut == null:
+		return
+	if not tut_flag.get("sel", false) and sel != null and sel.k == "ac":
+		tut_flag["sel"] = true
+	for a in ac:
+		if a.order != null and a.order.t == "attack":
+			tut_flag["atk"] = true
+	if trucks.size() >= 2:
+		tut_flag["truck"] = true
+	for m in msl:
+		if m.side == 0 and m.kind == "bal":
+			tut_flag["bal"] = true
+	if bl.size() > bl0:
+		tut_flag["build"] = true
+	if uavs.size() > 0:
+		tut_flag["uav"] = true
+	if kills >= 5:
+		tut_flag["kills5"] = true
+	while tut_i < MISSIONS.size() - 1 and tut_flag.get(MISSIONS[tut_i][2], false):
+		tut_i += 1
+		toast("Mission done. Next: " + String(MISSIONS[tut_i][0]))
+	var m: Array = MISSIONS[tut_i]
+	l_tut_h.text = "MISSION %d/%d: %s" % [tut_i + 1, MISSIONS.size(), m[0]]
+	l_tut_t.text = m[1]
+	pn_tut.visible = started and over == "" and tab == "map"
+	feed_box.position = Vector2(10, 128 + (pn_tut.size.y + 8.0 if pn_tut.visible else 0.0))
+
+
+func sheet_help() -> void:
+	sheet_title("How to play")
+	for h in HELP_TEXT:
+		var v := VBoxContainer.new()
+		v.add_child(mk_label(h[0], 19, COL.orange))
+		v.add_child(mk_wrap(h[1], 19, COL.text))
+		sheet_box.add_child(mk_panel(v))

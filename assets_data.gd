@@ -117,13 +117,15 @@ const BUY := {
 }
 
 # ---------------------------------------------------------------- names
-const PLAYER_TOWNS := ["Vell Haven", "Ostrand", "Marrow Fell", "Kestrel", "Dunmere", "Halcyon", "Brightwater"]
-const ENEMY_TOWNS := ["Drossvik", "Grau Pass", "Ironmoor", "Tessal", "Volkhar", "Nordrake", "Kamennograd"]
+const PLAYER_TOWNS := ["Vell Haven", "Ostrand", "Marrow Fell", "Kestrel", "Dunmere", "Halcyon", "Brightwater", "Pellham", "Corvane", "Aldermoor"]
+const ENEMY_TOWNS := ["Drossvik", "Grau Pass", "Ironmoor", "Tessal", "Volkhar", "Nordrake", "Kamennograd", "Zhelev", "Brakhov", "Ostrava Ridge"]
 
 const NATIONS := [
 	{"id": "nor", "name": "Norlovia", "c1": "e8c14a", "c2": "2f6b3f"},
 	{"id": "ilr", "name": "Ilrivia", "c1": "e5483f", "c2": "f0b429"},
 	{"id": "mol", "name": "Mololia", "c1": "4aa3e8", "c2": "f4f4f4"},
+	{"id": "ves", "name": "Vesperia", "c1": "9b59b6", "c2": "f4f4f4"},
+	{"id": "tar", "name": "Tarkhan", "c1": "2ecc71", "c2": "1b1b1b"},
 ]
 const STAGES := ["Protest", "Threat", "Demand", "Ultimatum"]
 const STAGE_T := [60.0, 50.0, 40.0, 30.0]
@@ -147,6 +149,7 @@ const NEWS_BAD := [
 const INTRO_TITLE := "Ember Front"
 const INTRO_SUB := "Pixel war strategy. You command Azuria (blue) against Karmin (red)."
 const INTRO := [
+	"You have 4 minutes of PEACE: the enemy does not attack yet. Follow the MISSION box at the top-left, one step at a time.",
 	"Seven tabs at the bottom: Map, Cities, Aviation, Air defense, Army, Politics, Industry.",
 	"Aviation: tap STRIKE, then an enemy marker. Pick an aircraft first to give it a route or a target. Buy aircraft and trucks at HQ (right side).",
 	"Ballistic missiles are fired from missile trucks. Buy a truck, select it, tap a target. Enemy trucks hide: use RECON to find them.",
